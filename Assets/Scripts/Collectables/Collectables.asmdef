@@ -1,0 +1,17 @@
+{
+    "name": "Collectables",
+    "rootNamespace": "",
+    "references": [
+        "GUID:a556312176663314d86035567daa111c",
+        "GUID:61e8f378a7d506b40ac11d0b51350fe5"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

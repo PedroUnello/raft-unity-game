@@ -1,0 +1,16 @@
+{
+    "name": "DistributedCommunication",
+    "rootNamespace": "",
+    "references": [
+        "GUID:add8ec35647d88e4c97651da7da6128c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

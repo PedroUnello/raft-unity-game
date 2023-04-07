@@ -1,0 +1,17 @@
+{
+    "name": "Gameplay",
+    "rootNamespace": "Assets.Script.Gameplay",
+    "references": [
+        "GUID:a556312176663314d86035567daa111c",
+        "GUID:81a6ff549dcc8764f85220c18f5a2cf8"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
