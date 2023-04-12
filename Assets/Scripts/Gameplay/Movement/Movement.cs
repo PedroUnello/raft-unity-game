@@ -42,7 +42,7 @@ namespace Assets.Script.Gameplay
             Vector3 preAdjustRot = _cameraTarget.transform.eulerAngles;
             preAdjustRot.x = ClampAngle(preAdjustRot.x, -45, 45);
             _cameraTarget.transform.eulerAngles = preAdjustRot;
-            _characterController.Move(_movement * speed * Time.deltaTime);
+            _characterController.Move(speed * Time.deltaTime * _movement);
             _animator.SetFloat("Move", Mathf.Max(Mathf.Abs(_movement.x), Mathf.Abs(_movement.z)));
         }
 

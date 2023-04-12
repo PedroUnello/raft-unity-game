@@ -58,7 +58,10 @@ namespace Assets.Script.Comm
 
             DontDestroyOnLoad(gameObject);
 
-            _actionCounter = 0;
+            _received = new();
+            _send = new();
+
+            _actionCounter = 2;
 
         }
 
@@ -96,8 +99,7 @@ namespace Assets.Script.Comm
                 streamReader.Read(inBuf);
 
                 string data = new(inBuf);
-
-                if (data.Length > 0)
+                if (data.Length > 0)// && !string.IsNullOrWhiteSpace(data) && !string.IsNullOrEmpty(data))
                 {
                     try
                     {
@@ -106,7 +108,7 @@ namespace Assets.Script.Comm
                     }
                     catch (System.ArgumentException)
                     {
-                        Debug.Log("Insufficient Data"); 
+                        ;// Debug.Log("Insufficient Data: -" + data + "-"); 
                     }
 
                 }
@@ -115,8 +117,6 @@ namespace Assets.Script.Comm
 
         public void StartCommunication(string pathName)
         {
-            _received = new();
-            _send = new();
                                                                         //PipeTransmissionMode.Message
             replicationEntryPoint = new(pathName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
             streamReader = new(replicationEntryPoint, Encoding.ASCII);
@@ -130,7 +130,7 @@ namespace Assets.Script.Comm
             connThread.Start();
         }
 
-        public void OnApplicationQuit()
+        private void OnApplicationQuit()
         {
             if (recvThread != null && recvThread.IsAlive)
             {
@@ -143,9 +143,30 @@ namespace Assets.Script.Comm
                 connThread.Abort();
             }
 
+            while (!_send.IsEmpty && replicationEntryPoint.IsConnected)
+            {
+                if (_send.TryDequeue(out GameLog gL))
+                {
+                    gL.ActionId = _actionCounter++;
+
+                    char[] outBuf = new char[_messageSize];
+                    string sendMsg = JsonUtility.ToJson(gL);
+                    sendMsg.ToCharArray().CopyTo(outBuf, 0);
+
+                    streamWriter.WriteLine(outBuf, 0, _messageSize);
+                    streamWriter.Flush();
+                }
+                else
+                {
+                    break;
+                }
+            }
+
             if (replicationEntryPoint != null)
             {
                 if (replicationEntryPoint.IsConnected) replicationEntryPoint.Disconnect();
+                streamReader.Close();
+                streamReader.Dispose();
                 replicationEntryPoint.Close();
                 replicationEntryPoint.Dispose();
             }

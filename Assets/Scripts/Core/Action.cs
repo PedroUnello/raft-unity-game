@@ -15,10 +15,13 @@ namespace Assets.Script.Core
             public string Point;
             public int Id;
         }
-
         public struct ShootArguments
         {
             public Vector3 dir;
+        }
+        public struct SpawnArguments
+        {
+            public Vector3 pos;
         }
 
         public enum ActionType

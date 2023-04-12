@@ -2,22 +2,40 @@ using Assets.Script.Combat;
 using UnityEngine;
 using Assets.Script.Core;
 using Assets.Script.Gameplay;
+using Assets.Script.Collectables;
+using Assets.Script.Comm;
 
 namespace Assets.Script.Player
 {
     public class Player : MonoBehaviour, IDamageable, IBuffable
     {
+        public enum Status
+        {
+            Idle,
+            Basic,
+            Melee,
+            Special,
+            Super
+        }
+
+
+
         [SerializeField] private Stats _stats;
         private bool _isAlive;
         private Movement _moveHandle;
 
-        public int playerID;
+        private CollectablePoint _acessable;
+        private Status _status;
+        private string _pointType;
+        private int _pointId;
+        
 
-        void Awake()
-        {
-            //Remove. (Should be call by Connect.)
-            Spawn();
-        }
+        public CollectablePoint Acessable => _acessable;
+        public Status PlayerStatus => _status;
+        public string PointType => _pointType;
+        public int PointId => _pointId;
+
+        public string playerID;
 
         void Start()
         {
@@ -46,69 +64,21 @@ namespace Assets.Script.Player
             _stats.CurHealth -= dmg;
 
             _isAlive = _stats.CurHealth > 0;
-            if (!_isAlive) 
+            if (!_isAlive)
             {
-                //Send to interpreter message that we died....
-                //Interpreter.Instance.Receive();
+                GameLog gameLog = new() { Id = playerID, Type = "Game", Action = new() { Type = Action.ActionType.Die } };
+                RaftManager.Instance.AppendAction(gameLog);
             }
         }
 
-        /*
-                void IBuffable.Buff(float timeLeft, float buffValue, string buffName, Buffs.BuffType buffType)
+        public void Spawn( Vector3 position ) 
         {
-            Coroutine newBuff = StartCoroutine(Stats.Buffs.UnBuff(timeLeft, buffValue, buffName, buffType));
-            Coroutine isThereSameBuff = Stats.Buffs.AddBuff(buffValue, buffName, buffType, newBuff);
-            if (isThereSameBuff != null)
-            { StopCoroutine(isThereSameBuff); }
-        }
-        void IBuffable.Buff(float buffValue, string buffName, Buffs.BuffType buffType)
-        {
-            Stats.Buffs.AddBuff(buffValue, buffName, buffType);
-        }
-        void IBuffable.UnBuff(float buffValue, string buffName, Buffs.BuffType buffType)
-        {
-            Stats.Buffs.UnBuff(0, buffValue, buffName, buffType);
-        }
-         */
-
-        public void Spawn() 
-        {
-            /*
-            |---------------------------Italian func to generate deterministic position-------------------------|
-            var idPos, _ = strconv.Atoi(fmt.Sprint(playerID))
-            var mapHeight = len(GameMap)
-            var mapWidth = len(GameMap[0])
-            var nOfCells = mapHeight * mapWidth
-            if idPos < nOfCells {
-                idPos += nOfCells
-            }
-            var found = false
-            var position = Position{ 0, 0, 0}
-            for !found {
-                idPos = idPos % nOfCells
-                position.X = float64(idPos / mapWidth)
-                position.Y = float64(idPos % mapWidth)
-        
-                if checkHitWall(position.X, position.Y) 
-                {
-                    idPos++
-                }
-                else
-                {
-                    found = true
-                }
-            }
-            return position
-            |--------------------------------------------------------------------------------------------------|
-            */
-
-            //Convertion would be:
-            //1. Static ref to all spawnpoints (that would define max player count)
-            //2. Acess with player id
-            // --by so every player would only spawn in the same place--
-
+            transform.position = position;
+            
             _stats = new(225, 20);
             _isAlive = true;
+
+            gameObject.SetActive(true);
         }
 
         public void Die() 
@@ -117,6 +87,26 @@ namespace Assets.Script.Player
             //Cancel input replication (could maintain a dictionary of {playerID - bool alive} in raftmanager
             //Invoke Spawn (not the function, the message send) to raftmanager
             //Respawn at given time in all players games
+        }
+
+        void OnTriggerEnter(Collider other)
+        {
+            if (other.CompareTag("Collectable"))
+            {
+                _acessable = other.GetComponent<CollectablePoint>();
+                if (other.TryGetComponent(out ElementalPoint eP)) { _pointType = "ElementalPoint"; _pointId = eP.PointID; }
+                else if (other.TryGetComponent<UltimatePoint>(out _)) { _pointType = "UltimatePoint"; }
+            }
+        }
+
+        void OnTriggerExit(Collider other)
+        {
+            if (other.CompareTag("Collectable"))
+            {
+                _acessable = null;
+                _pointType = null;
+                _pointId = -1;
+            }
         }
 
     }

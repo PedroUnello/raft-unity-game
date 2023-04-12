@@ -1,5 +1,4 @@
 using Assets.Script.Gameplay;
-using Assets.Script.Collectables; //Remove ?
 using UnityEngine;
 using static UnityEngine.InputSystem.InputAction;
 using Assets.Script.Core;
@@ -8,10 +7,8 @@ using Assets.Script.Comm;
 
 namespace Assets.Script.Player
 {
-    [RequireComponent(typeof(Player))]
     public class PlayerController : MonoBehaviour
     {
-
         private enum Status
         {
             Idle,
@@ -21,20 +18,16 @@ namespace Assets.Script.Player
             Super
         }
 
+        [Range(0.1f, 1)] [SerializeField] private float _percentageDistanceAim;
         private readonly float _meleeCD = 0.65f, _shootCD = 0.185f;
+        private float _initialCamDistance;
         private Action _action;
         private Status _status;
-        private Vector2 _movement, _rotation;
+        private Vector2 _movement, _rotation, _recordRotation;
         private Vector3 _recordMovement;
-        private Vector2 _recordRotation;
-        private Player _player;
-        [Range(0.1f, 1)][SerializeField] private float _percentageDistanceAim;
         private Cinemachine3rdPersonFollow _camComposer;
-        private float _initialCamDistance;
-        private CollectablePoint _acessable;
-        private string _pointType;
-        private int _pointId;
 
+        public Player Player;
 
         //This will be moved to gameplay modules
 
@@ -43,13 +36,6 @@ namespace Assets.Script.Player
         void Awake()
         {
             Cursor.lockState = CursorLockMode.Locked;
-            GameObject temp = GameObject.Find("CameraControl");
-            if (temp != null && temp.TryGetComponent(out CinemachineVirtualCamera virtualCamera)) 
-            {
-                _camComposer = virtualCamera.GetCinemachineComponent<Cinemachine3rdPersonFollow>();
-                if (_camComposer != null) _initialCamDistance = _camComposer.CameraDistance;
-            }
-            _player = GetComponent<Player>();
             _action = new();
         }
         void Start()
@@ -58,26 +44,27 @@ namespace Assets.Script.Player
             _rotation = Vector2.zero;
             _status = Status.Idle;
         }
-
         void Update()
         {
 
             Vector3 movementTranslatedToCam = (_movement.y * Camera.main.transform.forward + _movement.x * Camera.main.transform.right).normalized;
             movementTranslatedToCam.y = 0;
 
-            //bool notEqualRotation = Mathf.Abs(_recordRotation.x - _rotation.x) > 0.1f || Mathf.Abs(_recordRotation.y - _rotation.y) > 0.1f;
-
-            bool moving = (movementTranslatedToCam != _recordMovement || _rotation != _recordRotation) && _status <= Status.Basic;
+            Vector2 absoluteRotation = new(_rotation.x < 0 ? -1 : _rotation.x > 0 ? 1 : 0, _rotation.y < 0 ? -1 : _rotation.y > 0 ? 1 : 0) ;
+            //print(absoluteRotation + " =|= " + _recordRotation);
+            
+            bool moving = (!Equals(movementTranslatedToCam, _recordMovement) || !Equals(absoluteRotation, _recordRotation)) && _status <= Status.Basic;
 
             if (_action.Type > Action.ActionType.None || moving)
             {
                 _action.Movement = movementTranslatedToCam;
-                _action.Rotation = _rotation; 
+                _action.Rotation = absoluteRotation; 
 
                 _recordMovement = _action.Movement;
                 _recordRotation = _action.Rotation;
 
-                if (_acessable != null && _action.Type > Action.ActionType.None)
+                if (Player.Acessable != null 
+                    && _action.Type > Action.ActionType.None)
                 {
                     Action.CollectArguments cArgs = new();
                     switch (_action.Type)
@@ -89,8 +76,8 @@ namespace Assets.Script.Player
                             cArgs.Got = "Melee";
                             break;
                     }
-                    cArgs.Point = _pointType;
-                    cArgs.Id = _pointId;
+                    cArgs.Point = Player.PointType;
+                    cArgs.Id = Player.PointId;
                     _action.Arg = JsonUtility.ToJson(cArgs);
                     _action.Type = Action.ActionType.Take;
                 }
@@ -106,17 +93,23 @@ namespace Assets.Script.Player
                     }
                 }
 
-                GameLog gameLog = new();
-                gameLog.Action = _action;
-                //gameLog.ActionId = 0; //Switch to global indexer (in sync with raft mannager)
-                gameLog.Id = _player.playerID.ToString(); //Switch to player id (gotten when connect)
-                gameLog.Type = "Game";
-
+                GameLog gameLog = new() { Id = Player.playerID.ToString(), Type = "Game", Action = _action };
                 //Send to raft network (there the _actionId will be switched)
                 RaftManager.Instance.AppendAction(gameLog);
                 //Interpreter.Instance.Receive(gameLog); 
 
                 _action = new();
+            }
+        }
+
+        public void Register()
+        {
+            GameObject temp = GameObject.Find("CameraControl");
+            if (temp != null && temp.TryGetComponent(out CinemachineVirtualCamera virtualCamera))
+            {
+                _camComposer = virtualCamera.GetCinemachineComponent<Cinemachine3rdPersonFollow>();
+                if (_camComposer != null) _initialCamDistance = _camComposer.CameraDistance;
+                virtualCamera.Follow = Player.transform.GetChild(0);
             }
         }
 
@@ -188,42 +181,6 @@ namespace Assets.Script.Player
         void ResetStatus()
         {
             _status = Status.Idle;
-        }
-
-        void OnTriggerEnter(Collider other)
-        {
-            if (other.CompareTag("Collectable"))
-            {
-                _acessable = other.GetComponent<CollectablePoint>();
-                if (other.TryGetComponent(out ElementalPoint eP)) { _pointType = "ElementalPoint"; _pointId = eP.PointID; }
-                else if (other.TryGetComponent<UltimatePoint>(out _)) { _pointType = "UltimatePoint"; }
-            }
-        }
-
-        void OnTriggerExit(Collider other)
-        {
-            if (other.CompareTag("Collectable"))
-            {
-                _acessable = null;
-                _pointType = null;
-                _pointId = -1;
-            }
-        }
-
-        private void OnApplicationQuit()
-        {
-            /*
-             * 
-             * Remove below
-             * 
-             */
-            //engine.GameLog{Id: playerID, ActionId: ui.GetActionID(), Type: "Disconnect", Action: engine.ActionImpl{Action: engine.DISCONNECT}}
-
-            GameLog disconnect = new();
-            disconnect.Id = _player.playerID.ToString();
-            disconnect.Type = "Disconnect";
-            disconnect.Action = new Action(); 
-            RaftManager.Instance.AppendAction(disconnect);
         }
 
         //Get all inputs
