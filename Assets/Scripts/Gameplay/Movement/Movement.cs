@@ -13,8 +13,7 @@ namespace Assets.Script.Gameplay
         private CharacterController _characterController;
         private Animator _animator;
         private Vector3 _movement;
-        private Vector2 _rotation;
-
+        private float _gravityValue;
         [HideInInspector] public float speed;
 
         void Awake()
@@ -26,24 +25,30 @@ namespace Assets.Script.Gameplay
 
         void Update()
         {
-            Move();
+            HandleGravity();
         }
 
-        public void SetMovement(Vector3 movement, Vector2 rotation)
+        public void Move(Vector3 movement, Vector2 rotation)
         {
             _movement = movement;
-            _rotation = rotation;
-        }
-
-        void Move()
-        {
-            transform.RotateAround(transform.position, transform.up, _rotation.x * Time.deltaTime * _rotationSpeed);
-            _cameraTarget.transform.RotateAround(_cameraTarget.transform.position, _cameraTarget.transform.right, -_rotation.y * Time.deltaTime * _rotationSpeed);
+            transform.RotateAround(transform.position, transform.up, rotation.x * Time.deltaTime * _rotationSpeed);
+            _cameraTarget.transform.RotateAround(_cameraTarget.transform.position, _cameraTarget.transform.right, -rotation.y * Time.deltaTime * _rotationSpeed);
             Vector3 preAdjustRot = _cameraTarget.transform.eulerAngles;
             preAdjustRot.x = ClampAngle(preAdjustRot.x, -45, 45);
             _cameraTarget.transform.eulerAngles = preAdjustRot;
             _characterController.Move(speed * Time.deltaTime * _movement);
             _animator.SetFloat("Move", Mathf.Max(Mathf.Abs(_movement.x), Mathf.Abs(_movement.z)));
+        }
+
+        void HandleGravity()
+        {
+            if (!_characterController.isGrounded)
+            {
+                float lastValue = _gravityValue;
+                float newValue = _gravityValue + (-9.8f);
+                _movement.y = (lastValue + newValue) / 2;
+                _gravityValue = newValue;
+            }
         }
 
         float ClampAngle(float angleInDegrees, float min, float max)

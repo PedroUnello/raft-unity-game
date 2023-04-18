@@ -65,6 +65,7 @@ namespace Assets.Script.Player
                     PlayerController plControl = GetComponent<PlayerController>();
                     plControl.Player = player;
                     plControl.Register();
+                    plControl.enabled = true;
 
                     Action.SpawnArguments spawnArg = new();
 
@@ -74,7 +75,7 @@ namespace Assets.Script.Player
                     // --by so every player would only spawn in the same place--
 
                     //But for now... spawn in fixed pos
-                    spawnArg.pos = new Vector3(Random.Range(0, 40), 10, Random.Range(0, 40));
+                    spawnArg.pos = new Vector3(Random.Range(0, 40), 4, Random.Range(0, 40));
 
                     GameLog gameLog = new() { Id = log.Id, ActionId = 2, Type = "Game", Action = new() { Arg = JsonUtility.ToJson(spawnArg), Type = Action.ActionType.Spawn } };
                     RaftManager.Instance.AppendAction(gameLog);
@@ -93,9 +94,9 @@ namespace Assets.Script.Player
         void Interpret(GameObject destiny, Action action) 
         {
 
-            if (action.Type < Action.ActionType.Melee && destiny.TryGetComponent(out Movement moveHandle))
+            if (action.Type < Action.ActionType.Melee)
             {
-                moveHandle.SetMovement(action.Movement, action.Rotation);
+                destiny.transform.SetPositionAndRotation(action.Position, action.Rotation);
             }
 
             switch (action.Type)

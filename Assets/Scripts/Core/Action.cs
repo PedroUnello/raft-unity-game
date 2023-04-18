@@ -36,11 +36,11 @@ namespace Assets.Script.Core
             Spawn
         };
 
-        public Vector3 Movement;
-        public Vector2 Rotation;
+        public Vector3 Position;
+        public Quaternion Rotation;
         public ActionType Type;
         public string Arg;
 
-        public override string ToString() => "\nMovement: " + Movement.ToString() + "\nRotation: " + Rotation.ToString() + "\nType: " + Type.ToString() + "\nArgs: " + Arg;
+        public override string ToString() => "\nPosition: " + Position.ToString() + "\nRotation: " + Rotation.ToString() + "\nType: " + Type.ToString() + "\nArgs: " + Arg;
     }
 }

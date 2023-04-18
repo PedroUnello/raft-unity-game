@@ -149,7 +149,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 47739181}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: befb269df87e23340a17754b706a4176, type: 3}
   m_Name: 
@@ -202,8 +202,8 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 47739182}
         m_TargetAssemblyTypeName: Assets.Script.Player.PlayerController, Assembly-CSharp
-        m_MethodName: 
-        m_Mode: 1
+        m_MethodName: Look
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -398,6 +398,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e1fcf5dbb2e9d64280d8af15835701a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  InstanceID: 
   playerPrefab: {fileID: 2647843102422980175, guid: 585c9c8a629e5634382a430a9d71123a,
     type: 3}
 --- !u!1 &83752553
@@ -3020,7 +3021,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2998390521380303397}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 21.947409}
+  m_LocalPosition: {x: 0, y: 0, z: 21.94741}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3029,7 +3030,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -9.678461, y: -124.4082}
+  m_AnchoredPosition: {x: -9.678492, y: -124.4082}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2998390521380303387

@@ -23,9 +23,12 @@ namespace Assets.Script.Player
         private float _initialCamDistance;
         private Action _action;
         private Status _status;
-        private Vector2 _movement, _rotation, _recordRotation;
-        private Vector3 _recordMovement;
+        private Vector2 _movement, _rotation;
+        private Vector3 _recordPosition;
+        private Quaternion _recordRotation;
         private Cinemachine3rdPersonFollow _camComposer;
+
+        private int _inputDecimalPlaces = 4;
 
         public Player Player;
 
@@ -42,6 +45,8 @@ namespace Assets.Script.Player
         {
             _movement = Vector2.zero;
             _rotation = Vector2.zero;
+            _recordPosition = Player.transform.position;
+            _recordRotation = Player.transform.rotation;
             _status = Status.Idle;
         }
         void Update()
@@ -50,17 +55,16 @@ namespace Assets.Script.Player
             Vector3 movementTranslatedToCam = (_movement.y * Camera.main.transform.forward + _movement.x * Camera.main.transform.right).normalized;
             movementTranslatedToCam.y = 0;
 
-            Vector2 absoluteRotation = new(_rotation.x < 0 ? -1 : _rotation.x > 0 ? 1 : 0, _rotation.y < 0 ? -1 : _rotation.y > 0 ? 1 : 0) ;
-            //print(absoluteRotation + " =|= " + _recordRotation);
-            
-            bool moving = (!Equals(movementTranslatedToCam, _recordMovement) || !Equals(absoluteRotation, _recordRotation)) && _status <= Status.Basic;
+            if (Player.TryGetComponent(out Movement handle)) handle.Move(movementTranslatedToCam, _rotation);
 
-            if (_action.Type > Action.ActionType.None || moving)
+            bool moved = (!Equals(Player.transform.position, _recordPosition) || !Equals(Player.transform.rotation, _recordRotation)) && _status <= Status.Basic;
+
+            if (_action.Type > Action.ActionType.None || moved)
             {
-                _action.Movement = movementTranslatedToCam;
-                _action.Rotation = absoluteRotation; 
+                _action.Position = Player.transform.position;
+                _action.Rotation = Player.transform.rotation;
 
-                _recordMovement = _action.Movement;
+                _recordPosition = _action.Position;
                 _recordRotation = _action.Rotation;
 
                 if (Player.Acessable != null 
@@ -94,10 +98,10 @@ namespace Assets.Script.Player
                 }
 
                 GameLog gameLog = new() { Id = Player.playerID.ToString(), Type = "Game", Action = _action };
+                print(JsonUtility.ToJson(_action));
                 //Send to raft network (there the _actionId will be switched)
                 RaftManager.Instance.AppendAction(gameLog);
-                //Interpreter.Instance.Receive(gameLog); 
-
+                
                 _action = new();
             }
         }
@@ -158,12 +162,12 @@ namespace Assets.Script.Player
 
         public void Look(CallbackContext iValue)
         {
-            _rotation = iValue.ReadValue<Vector2>();
+            _rotation = RoundVector2(iValue.ReadValue<Vector2>(), _inputDecimalPlaces);
         }
 
         public void Move(CallbackContext iValue)
         {
-            _movement = iValue.ReadValue<Vector2>();
+            _movement = RoundVector2(iValue.ReadValue<Vector2>(), _inputDecimalPlaces);
         }
 
         public void Aim(CallbackContext iValue)
@@ -181,6 +185,25 @@ namespace Assets.Script.Player
         void ResetStatus()
         {
             _status = Status.Idle;
+        }
+
+        Vector2 RoundVector2(Vector2 v, int decimalCases)
+        {
+            v.x = RoundFloat(v.x, decimalCases);
+            v.y = RoundFloat(v.y, decimalCases);
+            return v;
+        }
+        Vector3 RoundVector3(Vector3 v, int decimalCases)
+        {
+            v.x = RoundFloat(v.x, decimalCases);
+            v.y = RoundFloat(v.y, decimalCases);
+            v.z = RoundFloat(v.z, decimalCases);
+            return v;
+        }
+        float RoundFloat( float val, int decimalCases)
+        {
+            float convert = Mathf.Pow(10, decimalCases);
+            return Mathf.Round(val * convert) / convert;
         }
 
         //Get all inputs
