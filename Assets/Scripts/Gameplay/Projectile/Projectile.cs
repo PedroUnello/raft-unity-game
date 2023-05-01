@@ -91,6 +91,7 @@ namespace Assets.Script.Gameplay
             _projectileIndex = 0;
             
             _destroyed = false;
+            _collider.enabled = true;
             gameObject.SetActive(true);
         }
 

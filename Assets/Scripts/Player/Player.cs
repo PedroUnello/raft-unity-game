@@ -1,52 +1,65 @@
-using Assets.Script.Combat;
 using UnityEngine;
+using UnityEngine.UI;
+using Assets.Script.Combat;
 using Assets.Script.Core;
 using Assets.Script.Gameplay;
 using Assets.Script.Collectables;
 using Assets.Script.Comm;
+using Assets.Script.Scenario;
+using UnityEngine.Events;
 
 namespace Assets.Script.Player
 {
+    public struct Collectable
+    {
+        public CollectablePoint Acessable;
+        public string Type;
+        public int Id;
+    }
+
+    [RequireComponent(typeof(Movement))]
+    [RequireComponent(typeof(Magazine))]
+    [RequireComponent(typeof(Melee))]
     public class Player : MonoBehaviour, IDamageable, IBuffable
     {
-        public enum Status
-        {
-            Idle,
-            Basic,
-            Melee,
-            Special,
-            Super
-        }
-
-
-
-        [SerializeField] private Stats _stats;
         private bool _isAlive;
+        private Collectable _collectable;
+        [SerializeField]
+        private Gradient _healthColor;
+        [SerializeField]
+        private Stats _stats;
         private Movement _moveHandle;
+        private Magazine _magHandle;
+        private Melee _meleeHandle;
+        private Special _specialHandle;
 
-        private CollectablePoint _acessable;
-        private Status _status;
-        private string _pointType;
-        private int _pointId;
-        
+        //Billboard health
+        public Slider HealthBar;
+        public Image HealthFill;
 
-        public CollectablePoint Acessable => _acessable;
-        public Status PlayerStatus => _status;
-        public string PointType => _pointType;
-        public int PointId => _pointId;
+        public bool IsAlive => _isAlive;
+        public Collectable Collectable => _collectable;
+        public UnityEvent<float> OnDamage { get; private set; } = new();
+        public UnityEvent<int> MeleeChanged { get; private set; } = new();
+        public UnityEvent<int> ProjectileChanged { get; private set; } = new();
+        public UnityEvent<int> SpecialChanged { get; private set; } = new();
+        public Movement Movement => _moveHandle;
 
         public string playerID;
 
-        void Start()
+        void Awake()
         {
             _moveHandle = GetComponent<Movement>();
+            _magHandle = GetComponent<Magazine>();
+            _meleeHandle = GetComponent<Melee>();
         }
-
         void Update()
         {
             if (!_isAlive) return;
 
             _stats.Buffs.Manage(Time.deltaTime);
+
+            UpdateHealthBar(_stats.CurHealth / _stats.MaxHealth);
 
             if (_moveHandle != null)
             {
@@ -59,43 +72,78 @@ namespace Assets.Script.Player
             _stats.Buffs.Buff(elem.GetType(), elem.Effect);
         }
 
-        public void Damage(float dmg)
+        public void Damage(float dmg) //Maybe change the name to ~Hit~ or smth
         {
-            _stats.CurHealth -= dmg;
 
+            OnDamage.Invoke(dmg); //Keep this
+
+            //Exchange this to another method
+            _stats.CurHealth -= dmg;
             _isAlive = _stats.CurHealth > 0;
-            if (!_isAlive)
+            
+        }
+
+        public void Take(string component, ElementalPoint eP)
+        {
+            switch (component)
             {
-                GameLog gameLog = new() { Id = playerID, Type = "Game", Action = new() { Type = Action.ActionType.Die } };
-                RaftManager.Instance.AppendAction(gameLog);
+                case "Magazine":
+                    ProjectileChanged.Invoke( eP.Access(ref _magHandle) );
+                    break;
+                case "Melee":
+                    MeleeChanged.Invoke(eP.Access(ref _meleeHandle));
+                    break;
+                case "Special":
+                    SpecialChanged.Invoke(eP.Access(ref _specialHandle));
+                    break;
             }
         }
 
-        public void Spawn( Vector3 position ) 
+        public void Spawn(Vector3 position, Quaternion rotation)
         {
-            transform.position = position;
-            
-            _stats = new(225, 20);
+            transform.SetPositionAndRotation(position, rotation);
+
+            _stats = new(225, _stats.Speed);
             _isAlive = true;
+
+            MeleeChanged.Invoke(0);
+            ProjectileChanged.Invoke(0);
+            SpecialChanged.Invoke(0);
+
+            _magHandle.Recharge();
+            _meleeHandle.Exchange(null);
 
             gameObject.SetActive(true);
         }
 
-        public void Die() 
+        public void Die()
         {
-            //Play animation
-            //Cancel input replication (could maintain a dictionary of {playerID - bool alive} in raftmanager
-            //Invoke Spawn (not the function, the message send) to raftmanager
-            //Respawn at given time in all players games
+            // 1 - Play animation
+
+            // 2 - Cancel input replication
+            //          (could maintain a dictionary of {playerID - bool alive} in raftmanager
+            //          (Or using the bool is alive in controller)
+
+            // 3 - Disable body physics and collider
+
+            // 4 - Invoke Spawn (not the function, the message send) to raftmanager
+            //          (Done by player controller)
+            
+        }
+
+        void UpdateHealthBar(float percentage)
+        {
+            HealthBar.value = percentage;
+            HealthFill.color = _healthColor.Evaluate(percentage);
         }
 
         void OnTriggerEnter(Collider other)
         {
             if (other.CompareTag("Collectable"))
             {
-                _acessable = other.GetComponent<CollectablePoint>();
-                if (other.TryGetComponent(out ElementalPoint eP)) { _pointType = "ElementalPoint"; _pointId = eP.PointID; }
-                else if (other.TryGetComponent<UltimatePoint>(out _)) { _pointType = "UltimatePoint"; }
+                _collectable.Acessable = other.GetComponent<CollectablePoint>();
+                if (other.TryGetComponent(out ElementalPoint eP)) { _collectable.Type = "ElementalPoint"; _collectable.Id = eP.PointID; }
+                else if (other.TryGetComponent<UltimatePoint>(out _)) { _collectable.Type = "UltimatePoint"; }
             }
         }
 
@@ -103,11 +151,10 @@ namespace Assets.Script.Player
         {
             if (other.CompareTag("Collectable"))
             {
-                _acessable = null;
-                _pointType = null;
-                _pointId = -1;
+                _collectable.Acessable = null;
+                _collectable.Type = null;
+                _collectable.Id = -1;
             }
         }
-
     }
 }

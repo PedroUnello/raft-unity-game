@@ -1,3 +1,4 @@
+using Assets.Script.Combat;
 using Assets.Script.Utils;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,14 +8,18 @@ namespace Assets.Script.Collectables
 {
     public class UltimatePoint : CollectablePoint
     {
-        public override void Access<T>(ref T destiny)
+        public override int Access<T>(ref T destiny)
         {
+            System.Type got = typeof( Neutral );
+
             switch (destiny)
             {
 
             }
 
             StartCoroutine(nameof(ResetPoint));
+
+            return Elemental.ElementIndexer.GetValueOrDefault(got);
         }
 
         protected override IEnumerator ResetPoint()

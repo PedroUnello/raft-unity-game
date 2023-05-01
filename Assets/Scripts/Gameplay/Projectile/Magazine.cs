@@ -16,7 +16,7 @@ namespace Assets.Script.Gameplay
 
         Projectile CreateFuncProjectile()
         {
-            Projectile proj = Instantiate(_baseProj, GameObject.Find(_baseProj.gameObject.name + " Pool").transform);
+            Projectile proj = Instantiate(_baseProj, GameObject.Find("Projectile Pool").transform);
             proj.selfPool = _projectilePool;
             proj.gameObject.SetActive(false);
             return proj;
@@ -32,7 +32,7 @@ namespace Assets.Script.Gameplay
             Destroy(proj.gameObject);
         }
 
-        private void Awake()
+        void Awake()
         {
             _projectilePool = new(CreateFuncProjectile, null, ActionOnReleaseProjectile, ActionOnDestroyProjectile, maxSize:(int)(_baseMagazineSize * 1.5f));
         }
@@ -45,7 +45,7 @@ namespace Assets.Script.Gameplay
             } else { Recharge(); }
         }
 
-        private void Recharge()
+        public void Recharge()
         {
             _projectiles = new Projectile[_baseMagazineSize];
             for (int i = 0; i < _baseMagazineSize; i++)

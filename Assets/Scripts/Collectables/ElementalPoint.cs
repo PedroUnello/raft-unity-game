@@ -4,73 +4,12 @@ using UnityEngine;
 using Assets.Script.Gameplay;
 using Assets.Script.Utils;
 using UnityEngine.Pool;
+using Assets.Script.Combat;
 
 namespace Assets.Script.Collectables
 {
     public class ElementalPoint : CollectablePoint
     {
-        /*
-        [System.Serializable]
-        private struct Container
-        {
-            public Projectile _proj;
-            //public Special _specialOne;
-            //public Special _specialTwo;
-            //public Ultimate _ultimate;
-            //public Melee _melee;
-
-            ObjectPool<GameObject> objectPool;
-        }
-
-
-        [System.Serializable]
-        private class Container
-        {
-            public Projectile _proj;
-            //public Special _specialOne;
-            //public Special _specialTwo;
-            //public Ultimate _ultimate;
-            //public Melee _melee;
-
-            ObjectPool<Projectile> _projectilePool = new(OnCreateProjectile, OnGetProjectile, OnReleaseProjectile, OnDestroyProjectile);
-
-            static Projectile OnCreateProjectile()
-            {
-                return Instantiate(_proj, GameObject.Find(_proj.gameObject.name + " Pool").transform);
-            }
-
-            Projectile OnGetProjectile()
-            {
-
-            }
-
-            Projectile OnReleaseProjectile()
-            {
-
-            }
-
-            Projectile OnDestroyProjectile()
-            {
-
-            }
-
-        }
-
-        [SerializeField] private Element[] _possibleElements;
-        private Dictionary<Element, Container> _elementalPoints;
-        [SerializeField] private Container _accessableElement;
-
-        IEnumerator ResetPoint()
-        {
-            gameObject.SetActive(false);
-            yield return Util.GetWaitForSeconds(_cooldown);
-            _elementalPoints.TryGetValue(_possibleElements[Random.Range(0, _possibleElements.Length)], out Container newElement);
-            _accessableElement = newElement;
-            gameObject.SetActive(true);
-        }
-
-        */
-
         private int _pointId;
         public int PointID => _pointId;
 
@@ -85,7 +24,7 @@ namespace Assets.Script.Collectables
         {
             //Maybe instance element without mono (here) ? 
 
-            Projectile proj = Instantiate(_proj, GameObject.Find(_proj.gameObject.name + " Pool").transform);
+            Projectile proj = Instantiate(_proj, GameObject.Find("Projectile Pool").transform);
             proj.selfPool = _projectilePool;
             proj.gameObject.SetActive(false);
             return proj;
@@ -119,23 +58,41 @@ namespace Assets.Script.Collectables
             
         }
 
-        public override void Access<T>(ref T destiny)
+        public override int Access<T>(ref T destiny)
         {
+
+            System.Type got = typeof(Neutral);
+
             switch (destiny)
             {
                 case Magazine mag:
+                    
                     List<Projectile> projList = new();
                     for (int i = 0; i < 8; i++) { projList.Add(_projectilePool.Get()); }
                     mag.Charge(projList.ToArray());
+                    
+                    got = _proj.GetComponent<Element>().GetType();
+                    
                     break;
+
                 case Special spcl:
+
+                    got = _specialOne.GetComponent<Element>().GetType();
+
                     break;
+                
                 case Melee melee:
+                    
                     melee.Exchange(_melee);
+
+                    got = _melee.GetComponent<Element>().GetType();
+
                     break;
             }
             
             StartCoroutine(nameof(ResetPoint));
+
+            return Elemental.ElementIndexer.GetValueOrDefault(got);
         }
 
         protected override IEnumerator ResetPoint()

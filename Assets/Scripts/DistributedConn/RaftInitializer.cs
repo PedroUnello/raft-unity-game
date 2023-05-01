@@ -59,18 +59,29 @@ namespace Assets.Script.Comm
         {
             //Start compiled Golang program
 
-            string pathName = Application.productName + Application.buildGUID + Application.identifier + Random.Range(0, 99999);
+            string pipeName = Application.productName + Application.buildGUID + Application.identifier + Random.Range(0, 99999);
 
-            string[] args =
-            {
-                pathName,
+            string args = string.Join(" ", new string[] {
+                pipeName,
                 localIP,
                 string.Join(" ", externalIP)
-            };
+            });
 
-            //ProcessStartInfo startInfo = new(Application.dataPath + "/Raft/go_conn" + SystemExtension.GetValueOrDefault(localOS, ""), string.Join(" ", args));
-            ProcessStartInfo startInfo = new("CMD.exe", "/K " + Application.dataPath + "/Raft/go_conn" + SystemExtension.GetValueOrDefault(localOS, "") + " " + string.Join(" ", args));
-            
+            //Use localOS to switch CMD to bash and etc.
+            string pathToNetworkingFile = Application.dataPath + "/Raft/go_conn" + SystemExtension.GetValueOrDefault(localOS, "");
+            ProcessStartInfo startInfo = new();
+            switch (localOS)
+            {
+                case System.Windows:
+                    startInfo = new("CMD.exe", string.Join(" ", new string[] { "/K", '"' + pathToNetworkingFile + '"', args }));
+                    break;
+                case System.Linux:
+                    startInfo.FileName = "/bin/bash";
+                    startInfo.Arguments = string.Join(" ", new string[] { pathToNetworkingFile, args });
+                    //startInfo.UseShellExecute = false;
+                    break;
+            }
+
             /*
             startInfo.CreateNoWindow = true;
             startInfo.RedirectStandardInput = true;
@@ -85,7 +96,7 @@ namespace Assets.Script.Comm
             //handle.OutputDataReceived += new DataReceivedEventHandler(DataReceived);
             //handle.ErrorDataReceived += new DataReceivedEventHandler(ErrorReceived);
 
-            GetComponent<RaftManager>().StartCommunication(pathName);
+            GetComponent<RaftManager>().StartCommunication(pipeName);
 
         }
 

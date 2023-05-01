@@ -22,6 +22,11 @@ namespace Assets.Script.Core
         public struct SpawnArguments
         {
             public Vector3 pos;
+            public Quaternion rot;
+        }
+        public struct DamageArguments
+        {
+            public float value;
         }
 
         public enum ActionType
@@ -32,15 +37,16 @@ namespace Assets.Script.Core
             Melee,
             Special,
             Super,
-            Die,
-            Spawn
+            Damage,
+            Spawn,
+            Die
         };
 
-        public Vector3 Movement;
-        public Vector2 Rotation;
+        public Vector3 Position;
+        public Quaternion Rotation;
         public ActionType Type;
         public string Arg;
 
-        public override string ToString() => "\nMovement: " + Movement.ToString() + "\nRotation: " + Rotation.ToString() + "\nType: " + Type.ToString() + "\nArgs: " + Arg;
+        public override string ToString() => "\nMovement: " + Position.ToString() + "\nRotation: " + Rotation.ToString() + "\nType: " + Type.ToString() + "\nArgs: " + Arg;
     }
 }

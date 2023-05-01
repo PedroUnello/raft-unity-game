@@ -1,6 +1,6 @@
 {
     "name": "DistributedCommunication",
-    "rootNamespace": "",
+    "rootNamespace": "Assets.Script.Comm",
     "references": [
         "GUID:add8ec35647d88e4c97651da7da6128c"
     ],

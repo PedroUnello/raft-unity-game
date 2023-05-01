@@ -1,9 +1,11 @@
+using UnityEngine;
 using Assets.Script.Gameplay;
 using Assets.Script.Collectables; //Remove ?
-using UnityEngine;
 using Assets.Script.Core;
 using Assets.Script.Comm;
+using Assets.Script.Scenario;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 namespace Assets.Script.Player
 {
@@ -29,18 +31,29 @@ namespace Assets.Script.Player
                 _instance = this;
             }
 
-            //DontDestroyOnLoad(gameObject);
-
             _players = GameObject.Find("Players").transform;
             _elementalPoints = GameObject.Find("Points").transform;
         }
+        void Start()
+        {
+            try
+            {
+                var act = RaftManager.Instance.NewestAction;
+            }
+            catch (System.NullReferenceException)
+            {
+                SceneManager.LoadScene(0);
+                Cursor.lockState = CursorLockMode.None;
+            }
+        }
         void Update()
         {
-            GameLog act = RaftManager.Instance.NewestAction;
-            if (act != null) 
+            try 
             { 
-                Receive(act); 
+                GameLog act = RaftManager.Instance.NewestAction;
+                if (act != null) { Receive(act); }
             }
+            catch (System.NullReferenceException) {; }  
         }
 
         public void Register(string ID, string modelName)
@@ -63,20 +76,16 @@ namespace Assets.Script.Player
                 {
                     //Register controller scripts (as this is player of this instance)
                     PlayerController plControl = GetComponent<PlayerController>();
-                    plControl.Player = player;
-                    plControl.Register();
-
+                    plControl.Register(player);
+                    plControl.enabled = true;
                     Action.SpawnArguments spawnArg = new();
 
-                    //Convertion would be:
-                    //1. Static ref to all spawnpoints (that would define max player count)
-                    //2. Acess with player id
-                    // --by so every player would only spawn in the same place--
+                    GameObject point = Map.Instance.SpawnPoint;
+                    spawnArg.pos = point.transform.position;
+                    spawnArg.rot = point.transform.rotation;
 
-                    //But for now... spawn in fixed pos
-                    spawnArg.pos = new Vector3(Random.Range(0, 40), 10, Random.Range(0, 40));
-
-                    GameLog gameLog = new() { Id = log.Id, ActionId = 2, Type = "Game", Action = new() { Arg = JsonUtility.ToJson(spawnArg), Type = Action.ActionType.Spawn } };
+                    GameLog gameLog = new() { Id = log.Id, ActionId = 2, Type = "Game", 
+                        Action = new() { Position = spawnArg.pos, Rotation = spawnArg.rot, Arg = JsonUtility.ToJson(spawnArg), Type = Action.ActionType.Spawn } };
                     RaftManager.Instance.AppendAction(gameLog);
                 }
             }
@@ -95,7 +104,8 @@ namespace Assets.Script.Player
 
             if (action.Type < Action.ActionType.Melee && destiny.TryGetComponent(out Movement moveHandle))
             {
-                moveHandle.SetMovement(action.Movement, action.Rotation);
+                //moveHandle.Move(action.Position, action.Rotation);
+                destiny.transform.SetPositionAndRotation(action.Position, action.Rotation);
             }
 
             switch (action.Type)
@@ -103,41 +113,22 @@ namespace Assets.Script.Player
                 case Action.ActionType.Take:
                     Action.CollectArguments cArgs = JsonUtility.FromJson<Action.CollectArguments>(action.Arg);
                     int ePID = cArgs.Id;
-                    if (cArgs.Point == "ElementalPoint")
+                    if (destiny.TryGetComponent(out Player player))
                     {
-                        var rightPoint = _elementalPoints.GetChild(ePID);
-                        if (rightPoint.gameObject.activeSelf && rightPoint.TryGetComponent(out ElementalPoint eP))
+                        if (cArgs.Point == "ElementalPoint")
                         {
-                            switch (cArgs.Got)
+                            var rightPoint = _elementalPoints.GetChild(ePID);
+                            if (rightPoint.gameObject.activeSelf && rightPoint.TryGetComponent(out ElementalPoint eP)) { player.Take(cArgs.Got, eP); }
+                        }
+                        else if (cArgs.Point == "UltimatePoint")
+                        {
+                            switch (action.Type)
                             {
-                                case "Magazine":
-                                    if (destiny.TryGetComponent(out Magazine magA))
-                                    {
-                                        eP.Access(ref magA);
-                                    }
-                                    break;
-                                case "Melee":
-                                    if (destiny.TryGetComponent(out Melee meleeA))
-                                    {
-                                        eP.Access(ref meleeA);
-                                    }
-                                    break;
-                                case "Special":
-                                    if (destiny.TryGetComponent(out Special spcl))
-                                    {
-                                        eP.Access(ref spcl);
-                                    }
+                                default:
+                                    print(action.Type);
                                     break;
                             }
                         }
-                    }
-                    else if (cArgs.Point == "UltimatePoint")
-                    {
-                        switch (action.Type)
-                        {
-
-                        }
-
                     }
                     break;
                 case Action.ActionType.Shoot:
@@ -152,18 +143,11 @@ namespace Assets.Script.Player
                 case Action.ActionType.Super:
                     break;
                 case Action.ActionType.Die:
-                    //Play animation I guess ? ...
-                    if (destiny.TryGetComponent(out Player player))
-                    {
-                        player.Die();
-                    }
+                    if (destiny.TryGetComponent(out player)) { player.Die(); }
                     break;
                 case Action.ActionType.Spawn:
-                    if (destiny.TryGetComponent(out player))
-                    {
-                        Action.SpawnArguments spArgs = JsonUtility.FromJson<Action.SpawnArguments>(action.Arg);
-                        player.Spawn( spArgs.pos );
-                    }
+                    Action.SpawnArguments spArgs = JsonUtility.FromJson<Action.SpawnArguments>(action.Arg);
+                    if (destiny.TryGetComponent(out player)) { player.Spawn( spArgs.pos, spArgs.rot ); }
                     break;
             }
         }
