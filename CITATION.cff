@@ -1,0 +1,28 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Raft Unity Game
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Pedro
+    family-names: Unello Neto
+    email: pedro_unello@hotmail.com
+    affiliation: Mackenzie
+  - given-names: Alessandro
+    family-names: Silva Bezerra
+    name-suffix: Bezerra
+    email: alessandrobezerra.silva@mackenzista.com.br
+    affiliation: Mackenzie
+  - affiliation: Mackenzie
+    email: murilo.magalhaes@mackenzista.com.br
+    given-names: Murilo
+    family-names: Magalhães
+  - email: lucas.morlino@mackenzista.com.br
+    affiliation: Mackenzie
+    given-names: Lucas
+    family-names: Guerrero Morlino
+repository-code: 'https://github.com/PedroUnello/raft-unity-game'
